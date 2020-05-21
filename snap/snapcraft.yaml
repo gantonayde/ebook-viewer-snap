@@ -1,0 +1,50 @@
+name: easy-ebook-viewer
+version: '0.1'
+summary: Easy eBook Viewer
+description: 'GTK Python Ebook Reader app with which you can easily read epub files'
+architectures:
+  - amd64
+base: core18
+grade: stable
+confinement: strict
+
+parts:
+  deps:
+    plugin: python
+    source: .
+    stage-packages:
+      - gir1.2-webkit-3.0
+      - libwebkitgtk-3.0-0
+      - gir1.2-gtk-3.0
+      - python3-gi
+      - python3-xdg
+  easy-ebook-viewer-files:
+    plugin: make
+    source: https://github.com/michaldaniel/ebook-viewer.git
+    source-type: git
+    source-depth: 1
+    override-build: |
+        export dest_dir=$SNAPCRAFT_PART_INSTALL
+        sed -i 's|PREFIX \= \/usr|PREFIX \= \$\{dest_dir\}\/usr|' Makefile 
+        make install 
+        cd $SNAPCRAFT_PART_INSTALL/usr/bin/
+        echo "#!/bin/sh" > easy-ebook-viewer-launcher
+        echo "python3 \$SNAP/usr/share/easy-ebook-viewer/main.py \"\$@\"" >> easy-ebook-viewer-launcher
+        chmod +x easy-ebook-viewer-launcher
+        sed -i 's|Icon=easy-ebook-viewer|Icon=/usr/share/easy-ebook-viewer/misc/easy-ebook-viewer-scalable\.svg|' ${SNAPCRAFT_PART_INSTALL}/usr/share/applications/easy-ebook-viewer.desktop
+    stage:
+      - usr/share/easy-ebook-viewer
+      - usr/bin
+      - usr/share/applications
+    
+apps:
+  easy-ebook-viewer:
+    extensions: [gnome-3-28]
+    command: easy-ebook-viewer-launcher
+    desktop: usr/share/applications/easy-ebook-viewer.desktop
+    plugs:
+      - home
+      - unity7
+      - x11
+      - desktop
+      - desktop-legacy
